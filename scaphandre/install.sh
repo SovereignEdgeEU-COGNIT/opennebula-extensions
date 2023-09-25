@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -ne 1 ]; then
-  echo "Configure the Host and install Scaphandre dependencies"
+  echo "Configure the Host and install Scaphandre as docker container"
   echo "Sudo privileguies are needed."
   echo "Use: $0"
   exit 1
@@ -41,4 +41,9 @@ else
   modprobe intel_rapl
 fi
 
-echo "[INFO] Done. Now you can start the Scpahandre exporter with 'sh ./start_exporter.sh' as oneadmin user"
+if docker ps | grep "hubblo/scaphandre"; then
+  echo "[INFO] Scaphandre container is already running" 
+else
+  echo "[INFO] Starting Scaphandre cointainer"
+  docker run -d -p 8080:8080 -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc hubblo/scaphandre prometheus --qemu --containers
+fi

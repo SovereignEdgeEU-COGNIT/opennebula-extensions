@@ -14,21 +14,20 @@ A Scaphandre agent is installed on each Host, which is in charge of collecting t
 
 ## Requirements
 
-1. Root access or user with sudo privileges
-2. Oneadmin SSH access configured from the Hypervisor node to the Frontend
+1. Root access or user with sudo privileges to install the packages.
 
 ## Installation and usage
 
-1. Run the `install.sh` script as `root` which will install the dependencies required by Scaphandre (docker) in case they are not installed. It will also enable the necessary kernel modules.
+1. Run the `install.sh` script as `root` which will install the dependencies required by Scaphandre (docker) in case they are not installed. It will also enable the necessary kernel modules. This script will start the Scaphandre container.
 
 ```
 sh ./install.sh
 ```
 
-2. Once the previous script has been executed correctly, run the `start_exporter.sh` script as `oneadmin` user which will start Scaphandre inside a docker container, exposing the necessary ports and configuration. The Frontend hostname needs to be provided to get the Host ID of the OpenNebula host.
+2. Once the previous script has been executed correctly, run the `generate_conf.sh`. This script will generate as output the configuration needed to add to the Prometheus configuration file.
 
 ```
-sh ./start_exporter.sh frontend-hostname
+sh ./generate_conf.sh
 ```
 
 As output, you will find something similar to the following:
@@ -38,10 +37,10 @@ As output, you will find something similar to the following:
   static_configs:
     - targets: ['my-kvm-host:8080']
       labels:
-        host_id: 2"
+        host_id: 2
 ```
 
-This output shows the configuration to be added to Prometheus in order to collect Scapahndre data. The script will try to extract the Host ID from within OpenNebula, but in case it is not found, it must be filled in by the user.
+This output shows the configuration to be added to Prometheus in order to collect Scapahndre data. The script will try to extract the Host ID from the OpenNebula monitor DB, but in case it is not found, it must be filled in by the user.
 
 ## Metrics
 
