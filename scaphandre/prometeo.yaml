@@ -1,0 +1,5 @@
+- job_name: 'scaphandre'
+  static_configs:
+    - targets: ['edge-host0:8080']
+      labels:
+        host_id: 5

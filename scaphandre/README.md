@@ -47,3 +47,21 @@ This output shows the configuration to be added to Prometheus in order to collec
 All the available metrics provided by Scaphandre can be found [here](https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html).
 
 In order to filter by OpenNebula VM or Host, you can use the labels `vmname=one-<id>` or `host_id=<id>`.
+
+## Extract Geolocation from hosts
+
+- Copy the file `./gelocation.rb` to `/usr/share/one/geolocation` and give it execution permissions.
+- Create a host state hook with the following template
+  ```
+  ARGUMENTS = $TEMPLATE
+  NAME = host_geolocation
+  TYPE = state
+  COMMAND = /usr/share/one/geo.rb
+  REMOTE = NO
+  RESOURCE = HOST
+  STATE = MONITORED
+  ```
+
+Every time a host enters the MONITORED state, which should be the end state of adding a host, an attribute `GEOLOCATION` should appear in the host template. It will contain a comma sepparated list of coordinates based on the host name resolving address.
+
+
