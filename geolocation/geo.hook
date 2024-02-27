@@ -1,0 +1,7 @@
+ARGUMENTS = $TEMPLATE
+NAME = host_geolocation
+TYPE = state
+COMMAND = /usr/share/one/geo.rb
+REMOTE = NO
+RESOURCE = HOST
+STATE = MONITORED
