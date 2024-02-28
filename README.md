@@ -12,7 +12,7 @@ The use of this tool makes it possible to monitor the energy usage per host, VMs
 
 The following figure outlines the integration with OpenNebula:
 
-![Alt text](images/one-scaphandre.png)
+![Alt text](scaphandre/images/one-scaphandre.png)
 
 A Scaphandre agent is installed on each Host, which is in charge of collecting the consumption metrics. Using the Prometheus exporter provided by Scaphandre, the metrics are exported and stored in Prometheus and can be later queried from Grafana.
 
@@ -80,4 +80,69 @@ oneadmin@opennebula-frontend:~$ onehost show 7 -j | jq .HOST.TEMPLATE.GEOLOCATIO
 "59.3294,18.0687" # Sweden Stockholm
 ```
 
+## Prometheus
+
+The opennebula-exporter has been enriched with two new vm metrics
+- **opennebula_vm_ut_flavours**: The oneflow service_template ID used to create the Serverless Runtime with the [Provisioning Engine](https://github.com/SovereignEdgeEU-COGNIT/provisioning-engine). If the VM is not backing a Serverless Runtime, then it will be **-1**
+- **opennebula_vm_power_consumption_uW**: The power consumption of a VM, provided that scaphandre is running on the host where the VM is deployed to.
+
+The Serverless Runtime VMs might come with a Prometheus Exporter inside. This requires the VM Template used by the Service Template (FLAVOUR) to have the attribute `PROMETHEUS_EXPORTER=<PORT>`. When a VM is created with this attribute, the exporter will be automatically added as a target to scrape by the prometheus server shipped by the `opennebula-prometheus` package.
+
+### How to use
+
+Replace the following files
+
+- `/usr/share/one/patch_datasources.rb` with `./prometheus/patch_datasources.rb`
+- `/usr/lib/one/opennebula_exporter/opennebula_vm_collector.rb` with `./prometheus/vm_collector.rb`
+
+
+Create a VM state hook using the file `./prometheus/vm.hook` or the template
+
+```
+NAME = prometheus_vm_discovery
+TYPE = state
+COMMAND = /usr/share/one/prometheus/patch_datasources.rb
+ON = RUNNING
+RESOURCE = VM
+```
+
+Every time a new VM is created, the hook will execute the script that will patch the targets to scrap by prometheus. Adding each VM with PROMETHEUS_EXPORTER.
+
+To verify new targets
+
+- check the prometheus configuration at `/etc/one/prometheus/prometheus.yml`
+- check the targets being scrapped with `curl http://localhost:9090/api/v1/targets | jq .`
+
+To verify new metrics issue ` curl localhost:9925/metrics`. An example
+
+```
+# TYPE opennebula_vm_ut_flavours gauge
+# HELP opennebula_vm_ut_flavours Flavours used to create the Serverless Runtime in the Provisioning Engine
+opennebula_vm_ut_flavours{one_vm_id="1334"} 2470.0
+opennebula_vm_ut_flavours{one_vm_id="1333"} 4.0
+opennebula_vm_ut_flavours{one_vm_id="1329"} -1.0
+opennebula_vm_ut_flavours{one_vm_id="1328"} 4.0
+opennebula_vm_ut_flavours{one_vm_id="1324"} 4.0
+opennebula_vm_ut_flavours{one_vm_id="1323"} -1.0
+opennebula_vm_ut_flavours{one_vm_id="1320"} 2470.0
+opennebula_vm_ut_flavours{one_vm_id="1317"} 2470.0
+opennebula_vm_ut_flavours{one_vm_id="1311"} 2470.0
+opennebula_vm_ut_flavours{one_vm_id="1307"} 5.0
+opennebula_vm_ut_flavours{one_vm_id="1302"} 5.0
+opennebula_vm_ut_flavours{one_vm_id="1301"} 5.0
+# TYPE opennebula_vm_power_consumption_uW gauge
+# HELP opennebula_vm_power_consumption_uW Scaphandre power usage by the VM in uW
+opennebula_vm_power_consumption_uW{one_vm_id="1334"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1333"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1329"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1328"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1324"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1323"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1320"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1317"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1311"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1307"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1302"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1301"} 0.0
+```
 

@@ -1,0 +1,5 @@
+NAME = prometheus_vm_discovery
+TYPE = state
+COMMAND = /usr/share/one/prometheus/patch_datasources.rb
+ON = RUNNING
+RESOURCE = VM
