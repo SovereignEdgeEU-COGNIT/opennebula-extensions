@@ -6,7 +6,33 @@ This repository holds a collection of extensions required by OpenNebula for the 
 
 Scaphandre is a metrology agent dedicated to electrical power consumption metrics. The goal of the project is to permit to any company or individual to measure the power consumption of its tech services and get this data in a convenient form, sending it through any monitoring or data analysis toolchain. Full details are available in the official repository of the project.
 
+Scaphandre gathers an estimation for the power consumption for each process in a physical machine using the processor RAPL extensions. Please, take into account that some modern AMD processors need a modern kernel to have this extensions enabled.
+
+```mermaid
+flowchart
+    C[Prometheus] --> |scaph_process_power_consumption_microwatts| B
+    B(scaphandre) --> |RAPL| A[//sys/class/powercap/]
+    
+    A --> D(one-vm 1)
+    A --> E(one-vm 2)
+    A --> |all processes| F(...)
+    A --> G(one-vm N)
+```
 The use of this tool makes it possible to monitor the energy usage per host, VMs and containers. It also has different exporters, including one dedicated to Prometheus, which is the one used in the integration of this tool in OpenNebula.
+
+Note as well that the Scaphandre container must have permissions to access to the `/sys/class/powercap/` directory. The metric `scaph_proces_power_consumption_microwatts` shows the amount of uW used for each process (where each VM is a KVM process).
+
+```
+$ curl http://scaphandre_host:8080/metrics
+# HELP scaph_process_power_consumption_microwatts Power consumption due to the process, measured on at the topology level, in microwatts
+# TYPE scaph_process_power_consumption_microwatts gauge
+scaph_process_power_consumption_microwatts{pid="4098269",exe="dnsmasq",cmdline="/usr/sbin/dnsmasq-x/run/dnsmasq/dnsmasq.pid-udnsmasq-7/etc/dnsmasq.d,.dpkg-dist,.dpkg-old,.dpkg-new--local-service--trust-anchor=.,20326,8,2,e06d44b80b8f1d39a95c0b0d7c65d08458e880409bbc683457104237c7f8ec8d"} 0
+scaph_process_power_consumption_microwatts{exe="vhost-3604920",pid="3604946",cmdline=""} 3817
+scaph_process_power_consumption_microwatts{exe="qemu-kvm-one",cmdline="/usr/bin/qemu-kvm-one-nameguest=one-524,...",exe="qemu-kvm-one",pid="3604920"} 125986
+scaph_process_power_consumption_microwatts{exe="kvm-nx-lpage-recovery-3603755",cmdline="",pid="3603762"} 0
+scaph_process_power_consumption_microwatts{exe="qemu-kvm-one",cmdline="/usr/bin/qemu-kvm-one-nameguest=one-523,...",exe="qemu-kvm-one",pid="3603755"} 129804
+...
+```
 
 ### How it works
 
@@ -113,7 +139,7 @@ To verify new targets
 - check the prometheus configuration at `/etc/one/prometheus/prometheus.yml`
 - check the targets being scrapped with `curl http://localhost:9090/api/v1/targets | jq .`
 
-To verify new metrics issue ` curl localhost:9925/metrics`. An example
+To verify new metrics issue ` curl localhost:9925/metrics`. An example follows:
 
 ```
 # TYPE opennebula_vm_ut_flavours gauge
