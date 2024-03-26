@@ -1,11 +1,11 @@
 #!/bin/bash
+
 if [ $# -ne 1 ]; then
   echo "Generates Prometheus configuration for Scaphandre container"
   echo "Use: $0"
   exit 1
 fi
 
-ONE="$1"
 HOSTNAME=$(hostname)
 
 # Get the HOST_ID from monitor DB name
