@@ -7,9 +7,9 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-if [ "$(id -u)" -ne 0 ]; then 
-  echo "Please run this script as root / sudo privileges." >&2; 
-  exit 1; 
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Please run this script as root / sudo privileges." >&2;
+  exit 1;
 fi
 
 KERNEL_VERSION=$(uname -r)
@@ -35,6 +35,7 @@ echo "[INFO] Enabling modprobe"
 
 IFS='.' read -ra version_parts <<< "$kernel_version"
 
+# TODO check if CPU is Intel or AMD first
 if [ "${version_parts[0]}" -ge 5 ]; then
   modprobe intel_rapl_common
 else
@@ -42,7 +43,7 @@ else
 fi
 
 if docker ps | grep "hubblo/scaphandre"; then
-  echo "[INFO] Scaphandre container is already running" 
+  echo "[INFO] Scaphandre container is already running"
 else
   echo "[INFO] Starting Scaphandre cointainer"
   docker run -d -p 8080:8080 -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc hubblo/scaphandre prometheus --qemu --containers

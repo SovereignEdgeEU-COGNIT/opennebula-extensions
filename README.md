@@ -6,13 +6,15 @@ This repository holds a collection of extensions required by OpenNebula for the 
 
 Scaphandre is a metrology agent dedicated to electrical power consumption metrics. The goal of the project is to permit to any company or individual to measure the power consumption of its tech services and get this data in a convenient form, sending it through any monitoring or data analysis toolchain. Full details are available in the official repository of the project.
 
-Scaphandre gathers an estimation for the power consumption for each process in a physical machine using the processor RAPL extensions. Please, take into account that some modern AMD processors need a modern kernel to have this extensions enabled.
+### How it works
+
+A Scaphandre agent is installed on each Host, which is in charge of collecting the consumption metrics. Using the Prometheus exporter provided by Scaphandre, the metrics are exported and stored in Prometheus and can be later queried from Grafana. Scaphandre gathers an estimation for the power consumption for each process in a physical machine using the CPU RAPL extensions.
 
 ```mermaid
 flowchart
     C[Prometheus] --> |scaph_process_power_consumption_microwatts| B
     B(scaphandre) --> |RAPL| A[//sys/class/powercap/]
-    
+
     A --> D(one-vm 1)
     A --> E(one-vm 2)
     A --> |all processes| F(...)
@@ -20,10 +22,47 @@ flowchart
 ```
 The use of this tool makes it possible to monitor the energy usage per host, VMs and containers. It also has different exporters, including one dedicated to Prometheus, which is the one used in the integration of this tool in OpenNebula.
 
-Note as well that the Scaphandre container must have permissions to access to the `/sys/class/powercap/` directory. The metric `scaph_proces_power_consumption_microwatts` shows the amount of uW used for each process (where each VM is a KVM process).
+### Requirements
 
+- [A CPU with RAPL](https://hubblo-org.github.io/scaphandre-documentation/compatibility.html#checking-rapl-is-available-on-your-cpu)
+- [A suitable kernel](https://hubblo-org.github.io/scaphandre-documentation/references/sensor-powercap_rapl.html#pre-requesites)
+- The Scaphandre container must have access to the `/sys/class/powercap/` directory.
+- A hypervisor node in [ENABLED state](https://docs.opennebula.io/6.8/management_and_operations/host_cluster_management/hosts.html#host-states) on the OpenNebula frontend
+
+### Installation and usage
+
+On the hypervisor host, run the `install.sh` script as `root` which will install scaphandre as a docker container and enable the required kernel modules.
+
+```bash
+./scaphandre/install.sh
 ```
-$ curl http://scaphandre_host:8080/metrics
+
+On the hypervisor host, run the `generate_conf.sh`.
+
+```bash
+./scaphandre/generate_conf.sh
+```
+
+As output, you will find something similar to the following:
+
+```yaml
+- job_name: 'scaphandre'
+  static_configs:
+    - targets: ['my-kvm-host:8080']
+      labels:
+        host_id: 2
+```
+
+Append it to the file `/etc/one/prometheus/prometheus.yml` in the OpenNebula frontend host.
+
+### Metrics
+
+All the available metrics provided by Scaphandre can be found [here](https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html).
+
+In order to filter by OpenNebula VM or Host, you can use the labels `vmname=one-<id>` or `host_id=<id>`.
+
+```bash
+$ curl http://my-kvm-host:8080/metrics
 # HELP scaph_process_power_consumption_microwatts Power consumption due to the process, measured on at the topology level, in microwatts
 # TYPE scaph_process_power_consumption_microwatts gauge
 scaph_process_power_consumption_microwatts{pid="4098269",exe="dnsmasq",cmdline="/usr/sbin/dnsmasq-x/run/dnsmasq/dnsmasq.pid-udnsmasq-7/etc/dnsmasq.d,.dpkg-dist,.dpkg-old,.dpkg-new--local-service--trust-anchor=.,20326,8,2,e06d44b80b8f1d39a95c0b0d7c65d08458e880409bbc683457104237c7f8ec8d"} 0
@@ -34,49 +73,7 @@ scaph_process_power_consumption_microwatts{exe="qemu-kvm-one",cmdline="/usr/bin/
 ...
 ```
 
-### How it works
-
-The following figure outlines the integration with OpenNebula:
-
-![Alt text](scaphandre/images/one-scaphandre.png)
-
-A Scaphandre agent is installed on each Host, which is in charge of collecting the consumption metrics. Using the Prometheus exporter provided by Scaphandre, the metrics are exported and stored in Prometheus and can be later queried from Grafana.
-
-### Requirements
-
-1. Root access or user with sudo privileges to install the packages.
-
-### Installation and usage
-
-1. Run the `install.sh` script as `root` which will install the dependencies required by Scaphandre (docker) in case they are not installed. It will also enable the necessary kernel modules. This script will start the Scaphandre container.
-
-```
-sh ./install.sh
-```
-
-2. Once the previous script has been executed correctly, run the `generate_conf.sh`. This script will generate as output the configuration needed to add to the Prometheus configuration file.
-
-```
-sh ./generate_conf.sh
-```
-
-As output, you will find something similar to the following:
-
-```
-- job_name: 'scaphandre'
-  static_configs:
-    - targets: ['my-kvm-host:8080']
-      labels:
-        host_id: 2
-```
-
-This output shows the configuration to be added to Prometheus in order to collect Scapahndre data. The script will try to extract the Host ID from the OpenNebula monitor DB, but in case it is not found, it must be filled in by the user.
-
-### Metrics
-
-All the available metrics provided by Scaphandre can be found [here](https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html).
-
-In order to filter by OpenNebula VM or Host, you can use the labels `vmname=one-<id>` or `host_id=<id>`.
+The metric `scaph_proces_power_consumption_microwatts` shows the amount of uW used for each process (where each VM is a KVM process).
 
 ## Hypervisor Nodes Geolocation
 
