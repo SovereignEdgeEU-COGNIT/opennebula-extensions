@@ -31,16 +31,10 @@ The use of this tool makes it possible to monitor the energy usage per host, VMs
 
 ### Installation and usage
 
-On the hypervisor host, run the `install.sh` script as `root` which will install scaphandre as a docker container and enable the required kernel modules.
+On the hypervisor host, run the `host.sh` script as `root`.It will install scaphandre as a docker container and enable the required kernel modules depending on your CPU Vendor.
 
 ```bash
-./scaphandre/install.sh
-```
-
-On the hypervisor host, run the `generate_conf.sh`.
-
-```bash
-./scaphandre/generate_conf.sh
+./scaphandre/host.sh
 ```
 
 As output, you will find something similar to the following:
