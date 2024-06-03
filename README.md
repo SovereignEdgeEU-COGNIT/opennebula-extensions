@@ -163,3 +163,54 @@ opennebula_vm_power_consumption_uW{one_vm_id="1302"} 0.0
 opennebula_vm_power_consumption_uW{one_vm_id="1301"} 0.0
 ```
 
+## Biscuit auth driver
+
+This driver will allow the use of [biscuit tokens](https://doc.biscuitsec.org/getting-started/introduction) as a replacement of a user password when issuing API Calls. Each user can generate tokens with their own private key, and register their public key as their password when creating the user. This public key will authenticate the tokens signed by the private key.
+
+### Requirements
+
+- Install the driver by copying `./biscuit` to `/var/lib/one/remotes/auth` on the OpenNebula frontend
+- [Enable the driver](https://docs.opennebula.io/6.8/integration_and_development/infrastructure_drivers_development/devel-auth.html#enabling-the-driver)
+- Install biscuit cli on the OpenNebula frontend
+```bash
+wget https://github.com/biscuit-auth/biscuit-cli/releases/download/0.4.2/biscuit-0.4.2-x86_64-unknown-linux-musl.tar.gz
+tar -xf biscuit-0.4.2-x86_64-unknown-linux-musl.tar.gz
+mv biscuit-0.4.2-x86_64-unknown-linux-musl/biscuit /usr/bin/
+```
+
+### How to use
+
+Create a user with the biscuit driver. User **dann1** as example.
+
+```bash
+$public_key=41e77e842e5c952a29233992dc8ebbedd2d83291a89bb0eec34457e723a69526
+oneuser create dann1 $public_key --driver biscuit
+root@ubuntu2204-92:~# oneuser list
+  ID NAME                                                                                                                  ENAB GROUP    AUTH            VMS     MEMORY        CPU
+   2 dann1                                                                                                                 yes  users    biscuit     0 /   -      0M /   0.0 /   -
+   1 serveradmin                                                                                                           yes  oneadmin server_c    0 /   -      0M /   0.0 /   -
+   0 oneadmin                                                                                                              yes  oneadmin core              -          -          -
+```
+
+`$public_key` is the public key  used to verify the biscuit token sent by the user instead of the regular password auth. The private key must be kept safe by the user. The public key will act as the password in the user entry at the OpenNebula database. [How to generate a keypair](https://doc.biscuitsec.org/usage/command-line#create-a-key-pair) to sign tokens.
+
+Now to use the driver to authenticate the user, a [biscuit token](https://doc.biscuitsec.org/getting-started/my-first-biscuit#creating-a-biscuit-token) must be sent on the password argument when issuing an API Call. The token must contain the username in the authority block, for example
+
+```
+user("dann1");
+```
+
+Once the token is generated, it will act as a password when issuing API Calls. For example
+
+```bash
+oneuser list --user dann1 --password En4KFAoFZGFubjEYAyIJCgcIChIDGIAIEiQIABIgv37UGwg8lSQNVlEg3IN7JbJjhlgQh9eRU_feDPmmFwUaQIsybrP_UtZuvv0joaHvesZGNnZ5vFoxMCc18gtNB5FfrKDeNf3KBnSvs1Egd3CUegc5BNhxkpli4vF5d4bsCQ4iIgogkIekfE40VgomPT7RZhuZCT09DHPukbrDQeHGhGlkvbk=
+  ID NAME                                                                                                                  ENAB GROUP    AUTH            VMS     MEMORY        CPU
+   2 dann1                                                                                                                 yes  users    biscuit     0 /   -      0M /   0.0 /   -
+```
+
+
+
+
+
+
+

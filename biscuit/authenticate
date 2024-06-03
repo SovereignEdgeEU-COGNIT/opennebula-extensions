@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+data=$(cat -)
+
+username=$(echo "${data}" | xmllint --xpath '//AUTHN/USERNAME/text()' -)
+public_key=$(echo "${data}" | xmllint --xpath '//AUTHN/PASSWORD/text()' -)
+biscuit_token=$(echo "${data}" | xmllint --xpath '//AUTHN/SECRET/text()' -)
+
+authorize() {
+    echo $biscuit_token | biscuit inspect - --public-key $public_key
+}
+
+authorization=$(authorize) || exit 1
+
+datalog_user=$(echo $authorization | grep "user(\"" | cut -d "\"" -f 2)
+
+[ username != $datalog_user ] || echo "Token user does not match call user"
+
+echo biscuit $username $public_key
+
