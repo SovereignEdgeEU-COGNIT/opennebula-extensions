@@ -113,12 +113,16 @@ class OpenNebulaVMCollector
             :type   => :gauge,
             :docstr => 'Scaphandre power usage by the VM in uW',
             :value  => lambda {|v|
-                uri = URI("http://#{v['HISTORY_RECORDS/HISTORY[last()]/HOSTNAME']}:8080/metrics")
-                res = Net::HTTP.get_response(uri)
-                power = res.body.split("\n").grep(/one-#{v['ID']},/)[0] if res.is_a?(Net::HTTPOK)
-                if power
-                    power.split.last.to_i
-                else
+                begin
+                    uri = URI("http://#{v['HISTORY_RECORDS/HISTORY[last()]/HOSTNAME']}:8080/metrics")
+                    res = Net::HTTP.get_response(uri)
+                    power = res.body.split("\n").grep(/^scaph_process_power_consumption_microwatts.*nameguest=one-#{v['ID']},/)[0] if res.is_a?(Net::HTTPOK)
+                    if power
+                        power.split.last.to_i
+                    else
+                        0
+                    end
+                rescue StandardError
                     0
                 end
             },
