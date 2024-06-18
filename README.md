@@ -53,8 +53,6 @@ Append it to the file `/etc/one/prometheus/prometheus.yml` in the OpenNebula fro
 
 All the available metrics provided by Scaphandre can be found [here](https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html).
 
-In order to filter by OpenNebula VM or Host, you can use the labels `vmname=one-<id>` or `host_id=<id>`.
-
 ```bash
 $ curl http://my-kvm-host:8080/metrics
 # HELP scaph_process_power_consumption_microwatts Power consumption due to the process, measured on at the topology level, in microwatts
@@ -65,6 +63,28 @@ scaph_process_power_consumption_microwatts{exe="qemu-kvm-one",cmdline="/usr/bin/
 scaph_process_power_consumption_microwatts{exe="kvm-nx-lpage-recovery-3603755",cmdline="",pid="3603762"} 0
 scaph_process_power_consumption_microwatts{exe="qemu-kvm-one",cmdline="/usr/bin/qemu-kvm-one-nameguest=one-523,...",exe="qemu-kvm-one",pid="3603755"} 129804
 ...
+```
+
+For each VM, the metrics are stored as `opennebula_vm_power_consumption_uW`. When reading the `opennebula_exporter` endpooint you can see them.
+
+```
+root@opennebula-frontend:~# curl http://localhost:9925/metrics | grep opennebula_vm_power_consumption_uW
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 13412    0 13412    0     0   2132      0 --:--:--  0:00:06 --:--:--  3281
+# TYPE opennebula_vm_power_consumption_uW gauge
+# HELP opennebula_vm_power_consumption_uW Scaphandre power usage by the VM in uW
+opennebula_vm_power_consumption_uW{one_vm_id="1984"} 7383.0
+opennebula_vm_power_consumption_uW{one_vm_id="1975"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1974"} 275666.0
+opennebula_vm_power_consumption_uW{one_vm_id="1967"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1963"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1962"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1961"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1960"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1959"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1958"} 0.0
+opennebula_vm_power_consumption_uW{one_vm_id="1957"} 0.0
 ```
 
 The metric `scaph_proces_power_consumption_microwatts` shows the amount of uW used for each process (where each VM is a KVM process).
