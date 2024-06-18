@@ -15,6 +15,7 @@
 #--------------------------------------------------------------------------- #
 
 require 'opennebula'
+require 'socket'
 
 class OpenNebulaVMCollector
 
@@ -114,11 +115,17 @@ class OpenNebulaVMCollector
             :docstr => 'Scaphandre power usage by the VM in uW',
             :value  => lambda {|v|
                 begin
-                    uri = URI("http://#{v['HISTORY_RECORDS/HISTORY[last()]/HOSTNAME']}:8080/metrics")
-                    res = Net::HTTP.get_response(uri)
-                    power = res.body.split("\n").grep(/^scaph_process_power_consumption_microwatts.*nameguest=one-#{v['ID']},/)[0] if res.is_a?(Net::HTTPOK)
-                    if power
-                        power.split.last.to_i
+                    host = v['HISTORY_RECORDS/HISTORY[last()]/HOSTNAME']
+
+                    if OpenNebulaVMCollector.port_open?(host, 8080)
+                        uri = URI("http://#{host}:8080/metrics")
+                        res = Net::HTTP.get_response(uri)
+                        power = res.body.split("\n").grep(/^scaph_process_power_consumption_microwatts.*nameguest=one-#{v['ID']},/)[0] if res.is_a?(Net::HTTPOK)
+                        if power
+                            power.split.last.to_i
+                        else
+                            0
+                        end
                     else
                         0
                     end
@@ -231,6 +238,19 @@ class OpenNebulaVMCollector
 
             @metrics['vm_nics'].set(tnics, :labels => labels)
         end
+    end
+
+    def self.port_open?(ip, port, seconds = 2)
+        Timeout.timeout(seconds) do
+            begin
+                TCPSocket.new(ip, port).close
+                true
+            rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
+                false
+            end
+        end
+    rescue Timeout::Error
+        false
     end
 
 end
