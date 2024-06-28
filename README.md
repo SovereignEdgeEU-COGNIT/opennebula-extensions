@@ -228,7 +228,16 @@ oneuser list --user dann1 --password En4KFAoFZGFubjEYAyIJCgcIChIDGIAIEiQIABIgv37
    2 dann1                                                                                                                 yes  users    biscuit     0 /   -      0M /   0.0 /   -
 ```
 
+## Edge Cluster Live Migration
 
+This extends the [live migration vmm driver action](https://docs.opennebula.io/6.8/integration_and_development/infrastructure_drivers_development/devel-vmm.html?highlight=migrate#actions) with the ability to perform it through a an L2 tunnel. When the migration happens, a temporary openvswitch switch will be created on the source KVM host. It will then create a VXLAN tunnel on the source host targetting the remote host. The same operation will be repeated on the remote host but inverted. This wil be the temporary overlay network that will be used to perform the live migration. Once the migration is concluded, it will be destroyed.
+
+### How to use
+
+- Rename the file `/var/lib/one/remotes/vmm/kvm/migrate` to `migrate_default` on the frontend
+- Copy the files `./live_migrate/migrate` and `./live_migrate/tunnel.sh` to `/var/lib/one/remotes/vmm/kvm/`
+- Sync the drivers to the hypervisor with `onehost sync --force`
+- Update the file `/etc/sudoers.d/opennebula` to include `/sbin/ip address *` commands on the **ONE_NET** command group
 
 
 
